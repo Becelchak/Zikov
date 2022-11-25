@@ -304,7 +304,7 @@ class DataSet():
     TypeFinishResult = ""
 
     def __init__(self):
-        self.file_name = input("Введите название файла: ")
+        self.file_name = input("Введите название файлика: ")
         self.job_name = input("Введите название профессии: ")
         self.TypeFinishResult = input("Каким должен быть результат? Вакансии или Статистика?")
         self.check_atr()
