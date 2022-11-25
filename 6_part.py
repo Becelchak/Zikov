@@ -8,12 +8,12 @@ import string
 
 import numpy as np
 import openpyxl as op
-#from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader
 from openpyxl.styles import Border, Side, Font
 from openpyxl.utils import get_column_letter
 from matplotlib import pyplot as plt
 import matplotlib
-#import jinja2
+import jinja2
 import pdfkit
 import wkhtmltopdf
 
@@ -301,9 +301,12 @@ class DataSet():
     sort_atr = ""
     revers_atr = ""
 
+    TypeFinishResult = ""
+
     def __init__(self):
         self.file_name = input("Введите название файла: ")
         self.job_name = input("Введите название профессии: ")
+        self.TypeFinishResult = input("Каким должен быть результат? Вакансии или Статистика?")
         self.check_atr()
         # self.result_read = self.csv_filter(self.file_name, self)
         self.vacancies_objects = self.csv_filter(self.file_name, self)
@@ -589,74 +592,76 @@ border = Border(left=Side(style='thin'),
                 top=Side(style='thin'),
                 bottom=Side(style='thin'))
 
-#Таблица
 wb = op.Workbook()
-rep = report(font_title,border)
-data_for_excel = [sorter_master.dict_inYear_noName_salary,
-           sorter_master.dict_inYear_WithName_salary,
-            sorter_master.dict_inYear_noName,
-            sorter_master.dict_inYear_WithName,
-            sorter_master.dict_inYear_City_salary,
-            sorter_master.dict_inYear_City]
-rep.generate_excel(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,wb,dataSet.job_name)
-wb.save("report.xlsx")
+if DataSet.TypeFinishResult == "Вакансии":
+    #Таблица
+    rep = report(font_title,border)
+    data_for_excel = [sorter_master.dict_inYear_noName_salary,
+               sorter_master.dict_inYear_WithName_salary,
+                sorter_master.dict_inYear_noName,
+                sorter_master.dict_inYear_WithName,
+                sorter_master.dict_inYear_City_salary,
+                sorter_master.dict_inYear_City]
+    rep.generate_excel(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,wb,dataSet.job_name)
+    wb.save("report.xlsx")
+elif DataSet.TypeFinishResult == "Статистика":
+    #Графики
+    labels_years = list(sorter_master.dict_inYear_noName_salary.keys())
+    salary_noName = list(sorter_master.dict_inYear_noName_salary.values())
+    salart_Name = list(sorter_master.dict_inYear_WithName_salary.values())
 
-#Графики
-labels_years = list(sorter_master.dict_inYear_noName_salary.keys())
-salary_noName = list(sorter_master.dict_inYear_noName_salary.values())
-salart_Name = list(sorter_master.dict_inYear_WithName_salary.values())
+    vac_noName = list(sorter_master.dict_inYear_noName.values())
+    vac_Name = list(sorter_master.dict_inYear_WithName.values())
 
-vac_noName = list(sorter_master.dict_inYear_noName.values())
-vac_Name = list(sorter_master.dict_inYear_WithName.values())
+    cityes_salary = list(sorter_master.dict_inYear_City_salary.values())
+    labels_cityes = list(sorter_master.dict_inYear_City.keys())
 
-cityes_salary = list(sorter_master.dict_inYear_City_salary.values())
-labels_cityes = list(sorter_master.dict_inYear_City.keys())
+    sorter_master.dict_inYear_City["Другие"] = sumInList
+    sorter_master.dict_inYear_City = dict(
+        sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
+    circle_labels = list(sorter_master.dict_inYear_City.keys())
+    cityes_perc = list(sorter_master.dict_inYear_City.values())
 
-sorter_master.dict_inYear_City["Другие"] = sumInList
-sorter_master.dict_inYear_City = dict(
-    sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
-circle_labels = list(sorter_master.dict_inYear_City.keys())
-cityes_perc = list(sorter_master.dict_inYear_City.values())
+    width = 0.4
+    x = np.arange(len(labels_years))
+    y = np.arange(len(labels_cityes))
 
-width = 0.4
-x = np.arange(len(labels_years))
-y = np.arange(len(labels_cityes))
+    matplotlib.rc('axes', titlesize=8)
+    matplotlib.rc('font', size=8)
+    matplotlib.rc('xtick', labelsize=8)
+    matplotlib.rc('ytick', labelsize=8)
+    matplotlib.rc('legend', fontsize=8)
 
-matplotlib.rc('axes', titlesize=8)
-matplotlib.rc('font', size=8)
-matplotlib.rc('xtick', labelsize=8)
-matplotlib.rc('ytick', labelsize=8)
-matplotlib.rc('legend', fontsize=8)
+    fig, ax = plt.subplots(2, 2)
 
-fig, ax = plt.subplots(2, 2)
+    rects1 = ax[0, 0].bar(x - width / 2, salary_noName, width, label="Средняя з/п")
+    rects2 = ax[0, 0].bar(x + width / 2, salart_Name, width, label="з/п {0}".format(dataSet.job_name))
+    ax[0, 0].set_title('Уровень зарплат по годам')
+    ax[0, 0].set_xticks(x)
+    ax[0, 0].set_xticklabels(labels_years, rotation=90)
+    ax[0, 0].legend()
 
-rects1 = ax[0, 0].bar(x - width / 2, salary_noName, width, label="Средняя з/п")
-rects2 = ax[0, 0].bar(x + width / 2, salart_Name, width, label="з/п {0}".format(dataSet.job_name))
-ax[0, 0].set_title('Уровень зарплат по годам')
-ax[0, 0].set_xticks(x)
-ax[0, 0].set_xticklabels(labels_years, rotation=90)
-ax[0, 0].legend()
+    rects3 = ax[0, 1].bar(x - width / 2, vac_noName, width, label="Количество вакансий")
+    rects4 = ax[0, 1].bar(x + width / 2, vac_Name, width, label="Количество вакансий {0}".format(dataSet.job_name))
+    ax[0, 1].set_title('Количество вакансий по годам')
+    ax[0, 1].set_xticks(x)
+    ax[0, 1].set_xticklabels(labels_years, rotation=90)
+    ax[0, 1].legend()
 
-rects3 = ax[0, 1].bar(x - width / 2, vac_noName, width, label="Количество вакансий")
-rects4 = ax[0, 1].bar(x + width / 2, vac_Name, width, label="Количество вакансий {0}".format(dataSet.job_name))
-ax[0, 1].set_title('Количество вакансий по годам')
-ax[0, 1].set_xticks(x)
-ax[0, 1].set_xticklabels(labels_years, rotation=90)
-ax[0, 1].legend()
+    rects5 = ax[1, 0].barh(y, cityes_salary, width * 2, align='center')
+    ax[1, 0].set_title('Уровень зарплат по городам')
+    ax[1, 0].set_yticks(y, labels=labels_cityes)
+    ax[1, 0].set_yticklabels(labels_cityes, fontsize=6,
+                             fontdict={'horizontalalignment': 'right', 'verticalalignment': 'center'})
+    ax[1, 0].invert_yaxis()
 
-rects5 = ax[1, 0].barh(y, cityes_salary, width * 2, align='center')
-ax[1, 0].set_title('Уровень зарплат по городам')
-ax[1, 0].set_yticks(y, labels=labels_cityes)
-ax[1, 0].set_yticklabels(labels_cityes, fontsize=6,
-                         fontdict={'horizontalalignment': 'right', 'verticalalignment': 'center'})
-ax[1, 0].invert_yaxis()
+    circle = ax[1, 1].pie(cityes_perc, labels=circle_labels, textprops={'fontsize': 6})
+    ax[1, 1].set_title('Доля вакансий по городам', fontsize=6)
+    ax[1, 1].axis('equal')
 
-circle = ax[1, 1].pie(cityes_perc, labels=circle_labels, textprops={'fontsize': 6})
-ax[1, 1].set_title('Доля вакансий по городам', fontsize=6)
-ax[1, 1].axis('equal')
-
-plt.tight_layout()
-fig.savefig("graph.png")
+    plt.tight_layout()
+    plt.show()
+    fig.savefig("graph.png")
 
 # В HTML
 
@@ -677,35 +682,28 @@ fig.savefig("graph.png")
 #env = Environment(loader=FileSystemLoader('.'))
 #template = env.get_template("shablon.html")
 
-test = []
-testDict = {}
-ws = wb["Статистика по годам"]
+job_name = dataSet.job_name
+path = "graph.png"
 
-for i in string.ascii_uppercase:
-    g = ws[i+"1"].value
-    if g == None:
-        break
-    test.append(g)
+#env = Environment(loader=FileSystemLoader('.'))
+#template = env.get_template("Shablon.html")
 
-testDict["content"] = []
-for i in range(len(sorter_master.dict_inYear_WithName_salary.keys())):
-    year = list(sorter_master.dict_inYear_WithName_salary.keys())[i]
-    mean = list(sorter_master.dict_inYear_noName_salary.values())[i]
-    mean_with_name = list(sorter_master.dict_inYear_WithName_salary.values())[i]
-    vacant = list(sorter_master.dict_inYear_noName.values())[i]
-    vacant_with_name = list(sorter_master.dict_inYear_WithName.values())[i]
-    testDict["content"].append("{0} {1} {2} {3} {4}".format(year,mean,mean_with_name,vacant,vacant_with_name))
 
-testDict['enumerate'] = enumerate
 
-path = r"E:\repos PyCharm\graph.png"
-#pdf_template = template.render({"Title":"Статистика по городам","path":path})
-#pdfkit.from_string(pdf_template, 'report.pdf')
-#config = pdfkit.configuration(wkhtmltopdf=r'D:\wkhtmltox\bin\wkhtmltopdf.exe')
-#pdfkit.from_string("table_html", 'report.pdf', configuration=config)
+#pdf_template = template.render({'job_name' : job_name, 'excel': wb["Статистика по годам"]})
+#config = pdfkit.configuration(wkhtmltopdf=r'E:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe')
+#pdfkit.from_string(pdf_template, 'report.pdf', configuration=config)
 
+
+
+#for row in wb["Статистика по годам"].rows:
+#    for cell in row:
 #{{Name_data}}
 #{{title_data}}
 #{% for data in enumerate(dataStrings) %}
 #    {{data[0]}} | {{data[1]}} | {{data[2]}} | {{data[3]}} | {{data[4]}} |
 #{% endfor %}
+
+#{ %for row in excel.rows: %}
+#{{row[0]}} < br >
+#{ % endfor %}

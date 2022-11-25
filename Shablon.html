@@ -1,0 +1,19 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PDF_Templ</title>
+</head>
+<body>
+    <h1> Аналитика по зарплатам и городам для
+профессии  {{ job_name }}</h1>
+
+<img src=jetbrains://pycharm/navigate/reference?project=reposBEST&path=graph.png>
+
+<div>
+    <h4>Статистика по годам</h4>
+    {% for row in excel.rows:%}
+    {{row[0]}} <br>
+    {% endfor %}
+</div>
+</body>
+</html>
