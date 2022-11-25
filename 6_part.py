@@ -302,7 +302,7 @@ class DataSet():
     revers_atr = ""
 
     def __init__(self):
-        self.file_name = input("Введите название файла: ")
+        self.file_name = input("Введите название ФАЙЛИЩА: ")
         self.job_name = input("Введите название профессии: ")
         self.check_atr()
         # self.result_read = self.csv_filter(self.file_name, self)
