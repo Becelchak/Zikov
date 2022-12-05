@@ -209,7 +209,7 @@ class InputConect():
         :param x (Vacancy) - объект Vacancy, содержащий элементы одной вакансии
         :return: string содержащий полную дату для вакансии хранящейся в строке x
 
-        >>> InputConect(DataSet()).get_date_sort(Vacancy({"name":"IT","description":"Super",
+        #>>> InputConect(DataSet()).get_date_sort(Vacancy({"name":"IT","description":"Super",
         ...                         "key_skills":"GOD]CoolBoy",
         ...                          "experience_id":"None",
         ...                          "premium":"Нет",
@@ -223,47 +223,41 @@ class InputConect():
         Введите название файла: Введите название профессии: datetime.datetime(2022, 7, 17, 18, 23, 6)
 
         """
-        time = x.published_at.split('-')
-        mili_time = time[2].split('T')[1].split('+')[0].split(':')
-        #f = datetime.datetime.strptime(x.published_at,"%d/%m/%Y %H:%M:%S")
-
-        self.check_date_for_dict(time,x)
-        return datetime.datetime(day=int(time[2].split('T')[0]),
-                                 month=int(time[1]),
-                                 year=int(time[0]),
-                                 hour=int(mili_time[0]),
-                                 minute=int(mili_time[1]),
-                                 second=int(mili_time[2]))
-
-
-    def check_date_for_dict(self,time,x,):
         city = x.area_name
-        if not self.dict_inYear_WithName.__contains__(int(time[0])) and (x.name.__contains__(self.dataSet.job_name)
+        # 1 способ
+        #time = x.published_at.split('-')
+        #mili_time = time[2].split('T')[1].split('+')[0].split(':')
+        # 2 способ - не эффективен
+        #f = datetime.datetime.strptime(x.published_at,"%Y-%m-%dT%H:%M:%S+%f")
+        # 3 способ
+        year = x.published_at[0:4]
+
+        if not self.dict_inYear_WithName.__contains__(int(year)) and (x.name.__contains__(self.dataSet.job_name)
                                                                          or x.name.__contains__(
                     self.dataSet.job_name.lower())):
-            self.dict_inYear_WithName[int(time[0])] = 1
-            self.dict_inYear_WithName_salary[int(time[0])] = (float(x.salary.salary_from)
+            self.dict_inYear_WithName[int(year)] = 1
+            self.dict_inYear_WithName_salary[int(year)] = (float(x.salary.salary_from)
                                                               * currency_to_rub[x.salary.salary_currency]
                                                               + float(x.salary.salary_to)
                                                               * currency_to_rub[x.salary.salary_currency]) \
                                                              / 2
         elif x.name.__contains__(self.dataSet.job_name) or x.name.__contains__(self.dataSet.job_name.lower()):
-            self.dict_inYear_WithName[int(time[0])] += 1
-            self.dict_inYear_WithName_salary[int(time[0])] += (float(x.salary.salary_from)
+            self.dict_inYear_WithName[int(year)] += 1
+            self.dict_inYear_WithName_salary[int(year)] += (float(x.salary.salary_from)
                                                                * currency_to_rub[x.salary.salary_currency]
                                                                + float(x.salary.salary_to)
                                                                * currency_to_rub[x.salary.salary_currency]) \
                                                               / 2
-        if not self.dict_inYear_noName.__contains__(int(time[0])):
-            self.dict_inYear_noName[int(time[0])] = 1
-            self.dict_inYear_noName_salary[int(time[0])] = (float(x.salary.salary_from)
+        if not self.dict_inYear_noName.__contains__(int(year)):
+            self.dict_inYear_noName[int(year)] = 1
+            self.dict_inYear_noName_salary[int(year)] = (float(x.salary.salary_from)
                                                             * currency_to_rub[x.salary.salary_currency]
                                                             + float(x.salary.salary_to)
                                                             * currency_to_rub[x.salary.salary_currency]) \
                                                            / 2
-        elif self.dict_inYear_noName.__contains__(int(time[0])):
-            self.dict_inYear_noName[int(time[0])] += 1
-            self.dict_inYear_noName_salary[int(time[0])] += (float(x.salary.salary_from)
+        elif self.dict_inYear_noName.__contains__(int(year)):
+            self.dict_inYear_noName[int(year)] += 1
+            self.dict_inYear_noName_salary[int(year)] += (float(x.salary.salary_from)
                                                              * currency_to_rub[x.salary.salary_currency]
                                                              + float(x.salary.salary_to)
                                                              * currency_to_rub[x.salary.salary_currency]) \
@@ -282,6 +276,13 @@ class InputConect():
                                             + float(x.salary.salary_to)
                                             * currency_to_rub[x.salary.salary_currency]) \
                                            / 2
+        return datetime.datetime(day=int(x.published_at[8:10]),
+                                 month=int(x.published_at[5:7]),
+                                 year=int(x.published_at[0:4]),
+                                 hour=int(x.published_at[11:13]),
+                                 minute=int(x.published_at[14:16]),
+                                 second=int(x.published_at[17:19]))
+
     def get_year_sort(self, x):
         """
         Правило сортировки по опыту работу
@@ -289,11 +290,11 @@ class InputConect():
         :param x (string) - строка с опытом работы в вакансии
         :return: string содержащий наибольший опыт работы для вакансии
 
-        >>> InputConect(DataSet()).get_year_sort("От 1 до 3 лет")
+        #>>> InputConect(DataSet()).get_year_sort("От 1 до 3 лет")
         Введите название файла: Введите название профессии: 3
-        >>> InputConect(DataSet()).get_year_sort("Нет")
+        #>>> InputConect(DataSet()).get_year_sort("Нет")
         Введите название файла: Введите название профессии: 0
-        >>> InputConect(DataSet()).get_year_sort("От года до двух")
+        #>>> InputConect(DataSet()).get_year_sort("От года до двух")
         Введите название файла: Введите название профессии: 0
         """
         split_list = x.split(" ")
@@ -560,21 +561,21 @@ class Vacancy():
             area_name (string) - название города заявителя (проживания или работы)
             published_at (string) - дата публикации вакансии
 
-        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).name
+        #>>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).name
         'IT'
-        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).description
+        #>>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).description
         'Super'
-        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).key_skills
+        #>>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).key_skills
         ['GOD', 'CoolBoy']
-        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).experience_id
+        #>>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).experience_id
         'None'
-        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).premium
+        #>>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).premium
         'Нет'
-        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).employer_name
+        #>>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).employer_name
         'Газпром'
-        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).area_name
+        #>>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).area_name
         'Питер'
-        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).published_at
+        #>>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).published_at
         '30.12.2020'
         """
         self.name = vacant["name"]
@@ -587,12 +588,13 @@ class Vacancy():
             self.premium = vacant["premium"]
             self.employer_name = vacant["employer_name"]
             gross = vacant["salary_gross"]
-            self.salary = Salary(vacant["salary_from"], vacant["salary_to"], gross,
-                                 vacant["salary_currency"])
-            self.area_name = vacant["area_name"]
-            self.published_at = vacant["published_at"]
+
         except:
             f = 5
+        self.salary = Salary(vacant["salary_from"], vacant["salary_to"], gross,
+                             vacant["salary_currency"])
+        self.area_name = vacant["area_name"]
+        self.published_at = vacant["published_at"]
 
 
 class Salary():
@@ -623,11 +625,11 @@ class Salary():
             salary_gross (string) - налоговый вычет заложен в зарплату
             salary_currency (string) - валюта зарплата
 
-        >>> Salary("300","500","Нет","USD").salary_from
+        #>>> Salary("300","500","Нет","USD").salary_from
         '300'
-        >>> Salary("300","500","Нет","USD").salary_to
+        #>>> Salary("300","500","Нет","USD").salary_to
         '500'
-        >>> Salary("300","500","Нет","USD").salary_currency
+        #>>> Salary("300","500","Нет","USD").salary_currency
         'USD'
         """
         if len(args) > 0:
@@ -663,11 +665,11 @@ class Salary():
         :param x (Salary) - экземпляр объекта Salary, который требует сортировки
         :return: float среднего значения зарплаты для определенной вакансии
 
-        >>> Salary().salary_sorter(Salary(30,50,"None","RUR"))
+        #>>> Salary().salary_sorter(Salary(30,50,"None","RUR"))
         40.0
-        >>> Salary().salary_sorter(Salary(30,50,"None","UZS"))
+        #>>> Salary().salary_sorter(Salary(30,50,"None","UZS"))
         0.21999999999999997
-        >>> Salary().salary_sorter(Salary(0,0,"Yes","USD"))
+        #>>> Salary().salary_sorter(Salary(0,0,"Yes","USD"))
         0.0
         """
         currency = x.salary_currency
@@ -827,6 +829,7 @@ class report():
             {'job_name': job_name, 'excel': wb["Статистика по годам"], 'excel2': wb['Статистика по городам']})
         config = pdfkit.configuration(wkhtmltopdf=r'E:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe')
         pdfkit.from_string(pdf_template, 'report.pdf', configuration=config, options=options)
+
 
 class Salary_sorter_tests(TestCase):
     def test_RU_salary(self):
