@@ -5,6 +5,9 @@ import re
 import os
 import datetime
 
+from unittest import TestCase
+import unittest
+
 import numpy as np
 import openpyxl as op
 from jinja2 import Environment, FileSystemLoader
@@ -15,6 +18,7 @@ import matplotlib
 import jinja2
 import pdfkit
 import wkhtmltopdf
+
 
 vacant_dic = {"name": "Название", "description": "Описание", "key_skills": "Навыки", "experience_id": "Опыт работы",
               "premium": "Премиум-вакансия", "employer_name": "Компания", "salary": "Оклад",
@@ -73,14 +77,15 @@ class InputConect():
     temp_dict = {}
     temp_salary_dict = {}
 
-    def __init__(self, data):
+    def __init__(self, data, skip_init = False):
         """
         Инициализирует объект InputConect, путем назначения входного экземпляра DataSet полю InputConect
 
         :param data: (DataSet) - Содержит в себе экземпляр обекта со всеми входными данными
 
         """
-        self.dataSet = data
+        if not skip_init:
+            self.dataSet = data
 
     def fill_title(self, filling_list, dic_naming, table):
         """
@@ -201,13 +206,38 @@ class InputConect():
         """
         Правило сортировки по дате
 
-        :param x (list) - список элементов одной вакансии
+        :param x (Vacancy) - объект Vacancy, содержащий элементы одной вакансии
         :return: string содержащий полную дату для вакансии хранящейся в строке x
+
+        >>> InputConect(DataSet()).get_date_sort(Vacancy({"name":"IT","description":"Super",
+        ...                         "key_skills":"GOD]CoolBoy",
+        ...                          "experience_id":"None",
+        ...                          "premium":"Нет",
+        ...                          "employer_name":"Газпром",
+        ...                          "salary_gross":"Нет",
+        ...                          "salary_from":"10",
+        ...                          "salary_to":"20",
+        ...                          "salary_currency":"RUR",
+        ...                          "area_name":"Питер",
+        ...                          "published_at":"2022-07-17T18:23:06+0300"}))
+        Введите название файла: Введите название профессии: datetime.datetime(2022, 7, 17, 18, 23, 6)
+
         """
-        city = x.area_name
         time = x.published_at.split('-')
         mili_time = time[2].split('T')[1].split('+')[0].split(':')
+        #f = datetime.datetime.strptime(x.published_at,"%d/%m/%Y %H:%M:%S")
 
+        self.check_date_for_dict(time,x)
+        return datetime.datetime(day=int(time[2].split('T')[0]),
+                                 month=int(time[1]),
+                                 year=int(time[0]),
+                                 hour=int(mili_time[0]),
+                                 minute=int(mili_time[1]),
+                                 second=int(mili_time[2]))
+
+
+    def check_date_for_dict(self,time,x,):
+        city = x.area_name
         if not self.dict_inYear_WithName.__contains__(int(time[0])) and (x.name.__contains__(self.dataSet.job_name)
                                                                          or x.name.__contains__(
                     self.dataSet.job_name.lower())):
@@ -252,19 +282,19 @@ class InputConect():
                                             + float(x.salary.salary_to)
                                             * currency_to_rub[x.salary.salary_currency]) \
                                            / 2
-        return datetime.datetime(day=int(time[2].split('T')[0]),
-                                 month=int(time[1]),
-                                 year=int(time[0]),
-                                 hour=int(mili_time[0]),
-                                 minute=int(mili_time[1]),
-                                 second=int(mili_time[2]))
-
     def get_year_sort(self, x):
         """
         Правило сортировки по опыту работу
 
-        :param x (list) - список элементов одной вакансии
-        :return: string содержащий опыт работы для вакансии хранящейся в строке x
+        :param x (string) - строка с опытом работы в вакансии
+        :return: string содержащий наибольший опыт работы для вакансии
+
+        >>> InputConect(DataSet()).get_year_sort("От 1 до 3 лет")
+        Введите название файла: Введите название профессии: 3
+        >>> InputConect(DataSet()).get_year_sort("Нет")
+        Введите название файла: Введите название профессии: 0
+        >>> InputConect(DataSet()).get_year_sort("От года до двух")
+        Введите название файла: Введите название профессии: 0
         """
         split_list = x.split(" ")
         max_year = 0
@@ -465,26 +495,26 @@ class DataSet():
             if not self.filter_atr.__contains__(':'):
                 self.message_error = "Формат ввода некорректен"
                 print(self.message_error)
-                exit()
+                exit(self.message_error)
             parameter = self.filter_atr.split(":")[0]
             parameter_list = self.filter_atr.split(":")[1].split(", ")
             parameter_list[0] = parameter_list[0].strip()
             if not (list(vacant_dic.values()).__contains__(parameter) or parameter == "Идентификатор валюты оклада"):
                 self.message_error = "Параметр поиска некорректен"
                 print(self.message_error)
-                exit()
+                exit(self.message_error)
             self.filter_for_table = self.filter_atr.split(":")
         if not list(vacant_dic.values()).__contains__(self.sort_atr) and not self.sort_atr == "":
             self.message_error = "Параметр сортировки некорректен"
             print(self.message_error)
-            exit()
+            exit(self.message_error)
         else:
             self.sort_parameter = (lambda arg: arg if list(vacant_dic.values()).__contains__(arg) else "")(
                 self.sort_atr)
         if not ["Да", "Нет", ""].__contains__(self.revers_atr):
             self.message_error = "Порядок сортировки задан некорректно"
             print(self.message_error)
-            exit()
+            exit(self.message_error)
         else:
             self.IsReverseSort = (lambda arg: arg == "Да")(self.revers_atr)
 
@@ -530,22 +560,39 @@ class Vacancy():
             area_name (string) - название города заявителя (проживания или работы)
             published_at (string) - дата публикации вакансии
 
+        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).name
+        'IT'
+        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).description
+        'Super'
+        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).key_skills
+        ['GOD', 'CoolBoy']
+        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).experience_id
+        'None'
+        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).premium
+        'Нет'
+        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).employer_name
+        'Газпром'
+        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).area_name
+        'Питер'
+        >>> Vacancy({"name":"IT","description":"Super","key_skills":"GOD]CoolBoy","experience_id":"None","premium":"Нет","employer_name":"Газпром","salary_gross":"Нет","salary_from":"10","salary_to":"20","salary_currency":"RUR","area_name":"Питер","published_at":"30.12.2020"}).published_at
+        '30.12.2020'
         """
         self.name = vacant["name"]
         gross = "None"
         try:
+
             self.description = vacant["description"]
             self.key_skills = vacant["key_skills"].split(']')
             self.experience_id = vacant["experience_id"]
             self.premium = vacant["premium"]
             self.employer_name = vacant["employer_name"]
             gross = vacant["salary_gross"]
+            self.salary = Salary(vacant["salary_from"], vacant["salary_to"], gross,
+                                 vacant["salary_currency"])
+            self.area_name = vacant["area_name"]
+            self.published_at = vacant["published_at"]
         except:
             f = 5
-        self.salary = Salary(vacant["salary_from"], vacant["salary_to"], gross,
-                             vacant["salary_currency"])
-        self.area_name = vacant["area_name"]
-        self.published_at = vacant["published_at"]
 
 
 class Salary():
@@ -575,6 +622,13 @@ class Salary():
             salary_to (string) - максимальная зарплата
             salary_gross (string) - налоговый вычет заложен в зарплату
             salary_currency (string) - валюта зарплата
+
+        >>> Salary("300","500","Нет","USD").salary_from
+        '300'
+        >>> Salary("300","500","Нет","USD").salary_to
+        '500'
+        >>> Salary("300","500","Нет","USD").salary_currency
+        'USD'
         """
         if len(args) > 0:
             self.salary_from = args[0]
@@ -608,6 +662,13 @@ class Salary():
 
         :param x (Salary) - экземпляр объекта Salary, который требует сортировки
         :return: float среднего значения зарплаты для определенной вакансии
+
+        >>> Salary().salary_sorter(Salary(30,50,"None","RUR"))
+        40.0
+        >>> Salary().salary_sorter(Salary(30,50,"None","UZS"))
+        0.21999999999999997
+        >>> Salary().salary_sorter(Salary(0,0,"Yes","USD"))
+        0.0
         """
         currency = x.salary_currency
         salar_min = float(x.salary_from) * currency_to_rub[currency]
@@ -767,6 +828,108 @@ class report():
         config = pdfkit.configuration(wkhtmltopdf=r'E:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe')
         pdfkit.from_string(pdf_template, 'report.pdf', configuration=config, options=options)
 
+class Salary_sorter_tests(TestCase):
+    def test_RU_salary(self):
+        self.assertEqual(Salary().salary_sorter(Salary(30,50,"None","RUR")),40.0)
+    def test_Not_RU_salary(self):
+        self.assertEqual(Salary().salary_sorter(Salary(30,50,"None","UZS")),0.21999999999999997)
+    def test_Bad_salary(self):
+        self.assertEqual(Salary().salary_sorter(Salary(0,0,"Yes","USD")),0.0)
+
+class Salary_init_tests(TestCase):
+    def test_salary_from(self):
+        self.assertEqual(Salary("300","500","Нет","USD").salary_from,"300")
+    def test_salary_to(self):
+        self.assertEqual(Salary("300","500","Нет","USD").salary_to,"500")
+    def test_salary_currency(self):
+        self.assertEqual(Salary("300","500","Нет","USD").salary_currency,"USD")
+
+class Vacancy_tests(TestCase):
+    def test_name(self):
+        self.assertEqual(Vacancy({"name":"IT","description":"Super",
+                                  "key_skills":"GOD]CoolBoy",
+                                  "experience_id":"None",
+                                  "premium":"Нет",
+                                  "employer_name":"Газпром",
+                                  "salary_gross":"Нет",
+                                  "salary_from":"10",
+                                  "salary_to":"20",
+                                  "salary_currency":"RUR",
+                                  "area_name":"Питер",
+                                  "published_at":"30.12.2020"}).name,
+                         "IT")
+    def test_description(self):
+        self.assertEqual(Vacancy(
+            {"name": "IT", "description": "Super", "key_skills": "GOD]CoolBoy", "experience_id": "None",
+             "premium": "Нет", "employer_name": "Газпром", "salary_gross": "Нет", "salary_from": "10",
+             "salary_to": "20", "salary_currency": "RUR", "area_name": "Питер", "published_at": "30.12.2020"}).description,
+                         "Super")
+    def test_key_skills(self):
+        self.assertEqual(Vacancy(
+            {"name": "IT", "description": "Super", "key_skills": "GOD]CoolBoy", "experience_id": "None",
+             "premium": "Нет", "employer_name": "Газпром", "salary_gross": "Нет", "salary_from": "10",
+             "salary_to": "20", "salary_currency": "RUR", "area_name": "Питер",
+             "published_at": "30.12.2020"}).key_skills,
+                         ['GOD','CoolBoy'])
+    def test_expe(self):
+        self.assertEqual(Vacancy(
+            {"name": "IT", "description": "Super", "key_skills": "GOD]CoolBoy", "experience_id": "None",
+             "premium": "Нет", "employer_name": "Газпром", "salary_gross": "Нет", "salary_from": "10",
+             "salary_to": "20", "salary_currency": "RUR", "area_name": "Питер",
+             "published_at": "30.12.2020"}).experience_id,
+                         'None')
+    def test_premium(self):
+        self.assertEqual(Vacancy(
+            {"name": "IT", "description": "Super", "key_skills": "GOD]CoolBoy", "experience_id": "None",
+             "premium": "Нет", "employer_name": "Газпром", "salary_gross": "Нет", "salary_from": "10",
+             "salary_to": "20", "salary_currency": "RUR", "area_name": "Питер",
+             "published_at": "30.12.2020"}).premium,
+                         'Нет')
+    def test_eployer(self):
+        self.assertEqual(Vacancy(
+            {"name": "IT", "description": "Super", "key_skills": "GOD]CoolBoy", "experience_id": "None",
+             "premium": "Нет", "employer_name": "Газпром", "salary_gross": "Нет", "salary_from": "10",
+             "salary_to": "20", "salary_currency": "RUR", "area_name": "Питер",
+             "published_at": "30.12.2020"}).employer_name,
+                         'Газпром')
+    def test_area_name(self):
+        self.assertEqual(Vacancy(
+            {"name": "IT", "description": "Super", "key_skills": "GOD]CoolBoy", "experience_id": "None",
+             "premium": "Нет", "employer_name": "Газпром", "salary_gross": "Нет", "salary_from": "10",
+             "salary_to": "20", "salary_currency": "RUR", "area_name": "Питер",
+             "published_at": "30.12.2020"}).area_name,
+                         'Питер')
+    def test_date(self):
+        self.assertEqual(Vacancy(
+            {"name": "IT", "description": "Super", "key_skills": "GOD]CoolBoy", "experience_id": "None",
+             "premium": "Нет", "employer_name": "Газпром", "salary_gross": "Нет", "salary_from": "10",
+             "salary_to": "20", "salary_currency": "RUR", "area_name": "Питер",
+             "published_at": "30.12.2020"}).published_at,
+                         '30.12.2020')
+
+class sort_date_test(TestCase):
+    def test_begin(self):
+        self.assertEqual(InputConect(DataSet()).get_date_sort(Vacancy({"name":"IT","description":"Super",
+                       "key_skills":"GOD]CoolBoy",
+                        "experience_id":"None",
+                        "premium":"Нет",
+                      "employer_name":"Газпром",
+                   "salary_gross":"Нет",
+                      "salary_from":"10",
+                        "salary_to":"20",
+                       "salary_currency":"RUR",
+                       "area_name":"Питер",
+                       "published_at":'2022-07-17T18:23:06+0300'})),datetime.datetime(2022, 7, 17, 18, 23, 6))
+
+class sort_year_tests(TestCase):
+    def test_normal(self):
+        self.assertEqual(InputConect(DataSet()).get_year_sort("От 1 до 3 лет"),3)
+    def test_zero(self):
+        self.assertEqual(InputConect(DataSet()).get_year_sort("Нет"),
+                         0)
+    def test_bad(self):
+        self.assertEqual(InputConect(DataSet()).get_year_sort("От года до двух"),
+                         0)
 
 dataSet = DataSet()
 
@@ -775,6 +938,7 @@ dataSet = DataSet()
 # table.align = 'l'
 full_table_skills = {}
 full_table_date = {}
+
 
 # Динамика зарплат по годам
 sorter_master = InputConect(dataSet)
@@ -792,12 +956,12 @@ sorter_master.dict_inYear_City = dict(
 sorter_master.dict_inYear_City = dict(list(sorter_master.dict_inYear_City.items())[:10])
 sorter_master.dict_inYear_City_salary = dict(list(sorter_master.dict_inYear_City_salary.items())[:10])
 
-print("Динамика уровня зарплат по годам: {0}".format(sorter_master.dict_inYear_noName_salary))
-print("Динамика количества вакансий по годам: {0}".format(sorter_master.dict_inYear_noName))
-print("Динамика уровня зарплат по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName_salary))
-print("Динамика количества вакансий по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName))
-print("Уровень зарплат по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City_salary))
-print("Доля вакансий по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City))
+#print("Динамика уровня зарплат по годам: {0}".format(sorter_master.dict_inYear_noName_salary))
+#print("Динамика количества вакансий по годам: {0}".format(sorter_master.dict_inYear_noName))
+#print("Динамика уровня зарплат по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName_salary))
+#print("Динамика количества вакансий по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName))
+#print("Уровень зарплат по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City_salary))
+#print("Доля вакансий по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City))
 
 font_title = Font(name='Calibri',
                   size=11,
@@ -883,3 +1047,6 @@ fig.savefig("graph.png")
 
 
 rep.generate_report(dataSet)
+
+if __name__ == '__main__':
+    unittest.main()
