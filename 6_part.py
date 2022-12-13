@@ -808,7 +808,6 @@ class report():
             ws.column_dimensions[get_column_letter(i + 1)].width = column_widths[i + 1]
 
     def generate_excel_async(self,years, data, name_job):
-
         self.total_year = years
         self.mean_salary = data[0]
         self.mean_salary_job = data[1]
@@ -838,20 +837,19 @@ class report():
             ws['E1'] = "Количество вакансий - {0}".format(name_job)
             ws['E1'].font = self.font
 
+            # ws['A{0}'.format(i + 2)] = years[i]
+            # ws['B{0}'.format(i + 2)] = self.mean_salary[years[i]]
+            # ws['C{0}'.format(i + 2)] = self.mean_salary_job[years[i]]
+            # ws['D{0}'.format(i + 2)] = self.count_vac[years[i]]
+            # ws['E{0}'.format(i + 2)] = self.count_vac_job[years[i]]
 
-            ws['A{0}'.format(i + 2)] = years[i]
-            ws['B{0}'.format(i + 2)] = self.mean_salary[years[i]]
-            ws['C{0}'.format(i + 2)] = self.mean_salary_job[years[i]]
-            ws['D{0}'.format(i + 2)] = self.count_vac[years[i]]
-            ws['E{0}'.format(i + 2)] = self.count_vac_job[years[i]]
-
-            column_widths = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-            for row in ws.rows:
-                for f, cell in enumerate(row):
-                    column_widths[f + 1] = max(len((str)(cell.value)) + 1, column_widths[f + 1])
-                    cell.border = self.border
-            for g in range(len(column_widths)):
-                ws.column_dimensions[get_column_letter(g + 1)].width = column_widths[g + 1]
+            # column_widths = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+            # for row in ws.rows:
+            #     for f, cell in enumerate(row):
+            #         column_widths[f + 1] = max(len((str)(cell.value)) + 1, column_widths[f + 1])
+            #         cell.border = self.border
+            # for g in range(len(column_widths)):
+            #     ws.column_dimensions[get_column_letter(g + 1)].width = column_widths[g + 1]
 
             # 2
             ws = book["Статистика по городам"]
@@ -867,23 +865,23 @@ class report():
             ws['E1'] = "Доля вакансий".format(name_job)
             ws['E1'].font = self.font
 
-            cityes_salar = list(self.mean_salary_city.keys())
-            cityes_vac = list(self.count_vac_city.keys())
-            for sal in range(len(cityes_salar)):
-                ws['A{0}'.format(sal + 2)] = cityes_salar[sal]
-                ws['B{0}'.format(sal + 2)] = self.mean_salary_city[cityes_salar[sal]]
-                ws['D{0}'.format(sal + 2)] = cityes_vac[sal]
-                ws['E{0}'.format(sal + 2)] = self.count_vac_city[cityes_vac[sal]]
-                ws['E{0}'.format(sal + 2)].number_format = "0%"
-
-            column_widths = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-            for row in ws.rows:
-                for j, cell in enumerate(row):
-                    column_widths[j + 1] = max(len((str)(cell.value)) + 1, column_widths[j + 1])
-                    cell.border = self.border
-            for k in range(len(column_widths)):
-                ws.column_dimensions[get_column_letter(k + 1)].width = column_widths[k + 1]
-            book.save(r"E:\Zikov\years\{0}.xlsx".format(years[i]))
+            # cityes_salar = list(self.mean_salary_city.keys())
+            # cityes_vac = list(self.count_vac_city.keys())
+            # for sal in range(len(cityes_salar)):
+            #     ws['A{0}'.format(sal + 2)] = cityes_salar[sal]
+            #     ws['B{0}'.format(sal + 2)] = self.mean_salary_city[cityes_salar[sal]]
+            #     ws['D{0}'.format(sal + 2)] = cityes_vac[sal]
+            #     ws['E{0}'.format(sal + 2)] = self.count_vac_city[cityes_vac[sal]]
+            #     ws['E{0}'.format(sal + 2)].number_format = "0%"
+            #
+            # column_widths = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+            # for row in ws.rows:
+            #     for j, cell in enumerate(row):
+            #         column_widths[j + 1] = max(len((str)(cell.value)) + 1, column_widths[j + 1])
+            #         cell.border = self.border
+            # for k in range(len(column_widths)):
+            #     ws.column_dimensions[get_column_letter(k + 1)].width = column_widths[k + 1]
+            book.save(r"E:\reposBEST\years\{0}.xlsx".format(years[i]))
     def generate_report(self,data):
         """
         Создание файла .pdf с графиками и таблицами полученным в результате формирования экземпляра объекта report
