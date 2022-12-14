@@ -10,14 +10,14 @@ import unittest
 
 import numpy as np
 import openpyxl as op
+import pandas as pd
 from jinja2 import Environment, FileSystemLoader
 from openpyxl.styles import Border, Side, Font
 from openpyxl.utils import get_column_letter
 from matplotlib import pyplot as plt
 import matplotlib
-import jinja2
 import pdfkit
-import wkhtmltopdf
+import multiprocessing
 
 
 vacant_dic = {"name": "Название", "description": "Описание", "key_skills": "Навыки", "experience_id": "Опыт работы",
@@ -46,6 +46,65 @@ formaterr_dict = {"AZN": "Манаты", "BYR": "Белорусские рубл
                   "moreThan6": "Более 6 лет",
                   "": "Нет значения"}
 
+#Попытка мультипроцессинга №64
+# def pool_work(self, x, dict_inYear_WithName, dict_inYear_WithName_salary):
+#     time = x.published_at.split('-')
+#     if not dict_inYear_WithName.__contains__(int(time[0])) and (x.name.__contains__(dataSet.job_name)
+#                                                                 or x.name.__contains__(
+#                 dataSet.job_name.lower())):
+#         dict_inYear_WithName[int(time[0])] = 1
+#         dict_inYear_WithName_salary[int(time[0])] = (float(x.salary.salary_from)
+#                                                      * currency_to_rub[x.salary.salary_currency]
+#                                                      + float(x.salary.salary_to)
+#                                                      * currency_to_rub[x.salary.salary_currency]) \
+#                                                     / 2
+#     elif x.name.__contains__(dataSet.job_name) or x.name.__contains__(dataSet.job_name.lower()):
+#         dict_inYear_WithName[int(time[0])] += 1
+#         dict_inYear_WithName_salary[int(time[0])] += (float(x.salary.salary_from)
+#                                                       * currency_to_rub[x.salary.salary_currency]
+#                                                       + float(x.salary.salary_to)
+#                                                       * currency_to_rub[x.salary.salary_currency]) \
+#                                                      / 2
+#     return (dict_inYear_WithName, dict_inYear_WithName_salary)
+#
+#
+# def pool_work2(self, x, dict_inYear_noName, dict_inYear_noName_salary):
+#     time = x.published_at.split('-')
+#     if not dict_inYear_noName.__contains__(int(time[0])):
+#         dict_inYear_noName[int(time[0])] = 1
+#         dict_inYear_noName_salary[int(time[0])] = (float(x.salary.salary_from)
+#                                                    * currency_to_rub[x.salary.salary_currency]
+#                                                    + float(x.salary.salary_to)
+#                                                    * currency_to_rub[x.salary.salary_currency]) \
+#                                                   / 2
+#     elif dict_inYear_noName.__contains__(int(time[0])):
+#         dict_inYear_noName[int(time[0])] += 1
+#         dict_inYear_noName_salary[int(time[0])] += (float(x.salary.salary_from)
+#                                                     * currency_to_rub[x.salary.salary_currency]
+#                                                     + float(x.salary.salary_to)
+#                                                     * currency_to_rub[x.salary.salary_currency]) \
+#                                                    / 2
+#     return (dict_inYear_noName, dict_inYear_noName_salary)
+#
+#
+# def pool_work3(self, x, temp_dict, temp_salary_dict):
+#     city = x.area_name
+#     if not temp_dict.__contains__(city):
+#         temp_dict[city] = 1
+#         temp_salary_dict[city] = (float(x.salary.salary_from)
+#                                   * currency_to_rub[x.salary.salary_currency]
+#                                   + float(x.salary.salary_to)
+#                                   * currency_to_rub[x.salary.salary_currency]) \
+#                                  / 2
+#     elif temp_dict.__contains__(city):
+#         temp_dict[city] += 1
+#         temp_salary_dict[city] += (float(x.salary.salary_from)
+#                                    * currency_to_rub[x.salary.salary_currency]
+#                                    + float(x.salary.salary_to)
+#                                    * currency_to_rub[x.salary.salary_currency]) \
+#                                    / 2
+#
+#     return (temp_dict, temp_salary_dict)
 
 class InputConect():
     """
@@ -425,6 +484,9 @@ class DataSet():
         """
         self.file_name = input("Введите название файла: ")
         self.job_name = input("Введите название профессии: ")
+
+        # self.file_name = "vacancies_by_year.csv"
+        # self.job_name = "Аналитик"
         self.check_atr()
         self.vacancies_objects = self.csv_filter(self.file_name, self)
         if len(self.vacancies_objects) == 0:
@@ -734,6 +796,7 @@ class report():
         :param name_job (string) - название профессии
         :return: .xlsx файл "report.xlsx"
         """
+
         self.total_year = years
         self.mean_salary = data[0]
         self.mean_salary_job = data[1]
@@ -807,7 +870,7 @@ class report():
         for i in range(len(column_widths)):
             ws.column_dimensions[get_column_letter(i + 1)].width = column_widths[i + 1]
 
-    def generate_excel_async(self, years, data, name_job):
+    def generate_excel_async(self, years, data, name_job, book):
 
         self.total_year = years
         self.mean_salary = data[0]
@@ -818,12 +881,16 @@ class report():
         self.count_vac_city = data[5]
 
         for year in years:
+            index = years.index(year)
             header = ["Год", "Средняя зарплата", "Средняя зарплата - {0}".format(name_job), "Количество вакансий",
                       "Количество вакансий - {0}".format(name_job)]
-            with open('years/{0}.csv'.format(year), "w") as file:
-                writer = csv.DictWriter(file, fieldnames=header)
-                writer.writerow({"Год": year, "Средняя зарплата": 0, "Средняя зарплата - {0}".format(name_job): 0,
-                                 "Количество вакансий": 0, "Количество вакансий - {0}".format(name_job): 0})
+            data = {"Год": year, "Средняя зарплата": self.mean_salary[years[index]],
+                    "Средняя зарплата - {0}".format(name_job): self.mean_salary_job[years[index]],
+                    "Количество вакансий": self.count_vac[years[index]],
+                    "Количество вакансий - {0}".format(name_job): self.count_vac_job[years[index]]}
+
+            file = pd.DataFrame(data, columns=header, index=[0])
+            file.to_csv("{0}/{1}.csv".format("years", year))
     def generate_report(self,data):
         """
         Создание файла .pdf с графиками и таблицами полученным в результате формирования экземпляра объекта report
@@ -962,7 +1029,22 @@ full_table_date = {}
 
 # Динамика зарплат по годам
 sorter_master = InputConect(dataSet)
+# Сложасная функция
 sorter_master.sorted_for_graf()
+# Попытка мультипроцессинка №64-2
+# if __name__ == "__main__":
+#     p1 = multiprocessing.Process(target=pool_work, args=(x,))
+#     p1.start()
+#
+#     p2 = multiprocessing.Process(target=pool_work2, args=(x,))
+#     p2.start()
+#
+#     p3 = multiprocessing.Process(target=pool_work3, args=(x,))
+#     p3.start()
+#
+#     p1.join()
+#     p2.join()
+#     p3.join()
 
 sorter_master.dict_inYear_City_salary = dict(
     sorted(sorter_master.dict_inYear_City_salary.items(), key=lambda item: item[1], reverse=True))
@@ -976,12 +1058,12 @@ sorter_master.dict_inYear_City = dict(
 sorter_master.dict_inYear_City = dict(list(sorter_master.dict_inYear_City.items())[:10])
 sorter_master.dict_inYear_City_salary = dict(list(sorter_master.dict_inYear_City_salary.items())[:10])
 
-#print("Динамика уровня зарплат по годам: {0}".format(sorter_master.dict_inYear_noName_salary))
-#print("Динамика количества вакансий по годам: {0}".format(sorter_master.dict_inYear_noName))
-#print("Динамика уровня зарплат по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName_salary))
-#print("Динамика количества вакансий по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName))
-#print("Уровень зарплат по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City_salary))
-#print("Доля вакансий по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City))
+print("Динамика уровня зарплат по годам: {0}".format(sorter_master.dict_inYear_noName_salary))
+print("Динамика количества вакансий по годам: {0}".format(sorter_master.dict_inYear_noName))
+print("Динамика уровня зарплат по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName_salary))
+print("Динамика количества вакансий по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName))
+print("Уровень зарплат по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City_salary))
+print("Доля вакансий по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City))
 
 font_title = Font(name='Calibri',
                   size=11,
@@ -1006,7 +1088,7 @@ data_for_excel = [sorter_master.dict_inYear_noName_salary,
             sorter_master.dict_inYear_City_salary,
             sorter_master.dict_inYear_City]
 rep.generate_excel(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,wb,dataSet.job_name)
-rep.generate_excel_async(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,dataSet.job_name)
+rep.generate_excel_async(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,dataSet.job_name, wb)
 wb.save("report.xlsx")
 
 #Графики
