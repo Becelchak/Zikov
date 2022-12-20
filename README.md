@@ -10,3 +10,6 @@
 
 Многопоточность (1)
 ![Многопоточность 1](https://user-images.githubusercontent.com/88208993/207563320-3680721a-3df5-46e1-8631-43dfcce56fd0.png)
+
+API
+![API 1](https://user-images.githubusercontent.com/88208993/208663692-61fa102d-e004-47ab-91ec-71a063a46e77.png)
