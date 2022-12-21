@@ -4,6 +4,8 @@ import re
 # import prettytable
 import os
 import datetime
+import requests
+import xml.etree.ElementTree as ET
 
 from unittest import TestCase
 import unittest
@@ -105,6 +107,8 @@ formaterr_dict = {"AZN": "Манаты", "BYR": "Белорусские рубл
 #                                    / 2
 #
 #     return (temp_dict, temp_salary_dict)
+
+curr_dict = {}
 
 class InputConect():
     """
@@ -482,11 +486,11 @@ class DataSet():
             job_name (string) - содержит название профессии, по которой будет осуществлен поиск и отбор
             vacancies_objects (list) - содержит все поля вакансии
         """
-        self.file_name = input("Введите название файла: ")
-        self.job_name = input("Введите название профессии: ")
+        #self.file_name = input("Введите название файла: ")
+        #self.job_name = input("Введите название профессии: ")
 
-        # self.file_name = "vacancies_by_year.csv"
-        # self.job_name = "Аналитик"
+        self.file_name = "vacancies_dif_currencies.csv"
+        self.job_name = "Аналитик"
         self.check_atr()
         self.vacancies_objects = self.csv_filter(self.file_name, self)
         if len(self.vacancies_objects) == 0:
@@ -694,12 +698,17 @@ class Salary():
         #>>> Salary("300","500","Нет","USD").salary_currency
         'USD'
         """
+        global curr_dict
         if len(args) > 0:
             self.salary_from = args[0]
             self.salary_to = args[1]
             if args[2] != "None":
                 self.salary_gross = args[2]
             self.salary_currency = args[3]
+            if not curr_dict.__contains__(args[3]):
+                curr_dict[args[3]] = 1
+            else:
+                curr_dict[args[3]] += 1
 
     def prepare_salary(self, string_salary):
         """
@@ -1028,9 +1037,75 @@ full_table_date = {}
 
 
 # Динамика зарплат по годам
-sorter_master = InputConect(dataSet)
-# Сложасная функция
-sorter_master.sorted_for_graf()
+#sorter_master = InputConect(dataSet)
+# Сложная функция
+#sorter_master.sorted_for_graf()
+temp_dict = []
+temp_vacant_obj = []
+for curr in curr_dict.items():
+    curr_dict[curr[0]] = curr[1] / len(dataSet.vacancies_objects)
+    if curr[1] > 5000:
+        temp_dict.append(curr[0])
+
+
+for vacant in dataSet.vacancies_objects:
+    if temp_dict.__contains__(vacant.salary.salary_currency):
+        temp_vacant_obj.append(vacant)
+
+dataSet.vacancies_objects = temp_vacant_obj
+dataSet.vacancies_objects.sort(key= lambda x: x.published_at)
+min = dataSet.vacancies_objects[0].published_at.split('T')[0]
+max = dataSet.vacancies_objects[len(dataSet.vacancies_objects) - 1].published_at.split('T')[0]
+minTime = datetime.datetime(year=int(min.split('-')[0]),
+                            month=int(min.split('-')[1]),
+                            day=1)
+maxTime = datetime.datetime(year=int(max.split('-')[0]),
+                            month=int(max.split('-')[1]),
+                            day=1)
+
+years_dif = maxTime.year - minTime.year
+month_dif = maxTime.month - minTime.month + (12 * years_dif)
+
+# Создание csv валют
+header_csv = ["date"] + list(curr_dict.keys())
+file = open('current.csv', 'w', newline='')
+writer = csv.DictWriter(file,fieldnames=header_csv)
+writer.writeheader()
+
+row_list = []
+df = pd.DataFrame(columns=header_csv)
+month = minTime.month
+year = minTime.year
+for date in range(month_dif):
+    answ_dict = {"date": 0}
+    dat = ""
+    for curr in curr_dict.keys():
+        answ_dict["date"] = "{0}-{1}".format(year, month)
+        if curr != "RUR":
+            m_month = month
+            if month < 10:
+                m_month = "0{0}".format(month)
+            url_Bank = "http://www.cbr.ru/scripts/XML_daily.asp?date_req=01/{0}/{1}".format(m_month, year)
+            try:
+                res = ET.fromstring(requests.get(url_Bank).text) \
+                    .find('./Valute[CharCode="{0}"]/Value'.format(curr)) \
+                    .text.replace(',', '.')
+                answ_dict[curr] = res
+            except:
+                answ_dict[curr] = ' '
+        else:
+            answ_dict[curr] = ' '
+    month += 1
+    if month > 12:
+        month = 1
+        year += 1
+    writer.writerow(answ_dict)
+    answ_dict.clear()
+
+file.close()
+
+#print("Частота валют за промежуток 2003-2022 : {0}".format(curr_dict))
+
 # Попытка мультипроцессинка №64-2
 # if __name__ == "__main__":
 #     p1 = multiprocessing.Process(target=pool_work, args=(x,))
@@ -1046,110 +1121,108 @@ sorter_master.sorted_for_graf()
 #     p2.join()
 #     p3.join()
 
-sorter_master.dict_inYear_City_salary = dict(
-    sorted(sorter_master.dict_inYear_City_salary.items(), key=lambda item: item[1], reverse=True))
-sorter_master.dict_inYear_City = dict(
-    sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
-
-sumInList = sorter_master.dict_inYear_City["Другие"] + sum(list(dict(list(sorter_master.dict_inYear_City.items())[10:]).values()))
-sorter_master.dict_inYear_City["Другие"] = 0
-sorter_master.dict_inYear_City = dict(
-    sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
-sorter_master.dict_inYear_City = dict(list(sorter_master.dict_inYear_City.items())[:10])
-sorter_master.dict_inYear_City_salary = dict(list(sorter_master.dict_inYear_City_salary.items())[:10])
-
-print("Динамика уровня зарплат по годам: {0}".format(sorter_master.dict_inYear_noName_salary))
-print("Динамика количества вакансий по годам: {0}".format(sorter_master.dict_inYear_noName))
-print("Динамика уровня зарплат по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName_salary))
-print("Динамика количества вакансий по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName))
-print("Уровень зарплат по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City_salary))
-print("Доля вакансий по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City))
-
-font_title = Font(name='Calibri',
-                  size=11,
-                  bold=True,
-                  italic=False,
-                  vertAlign=None,
-                  underline='none',
-                  strike=False,
-                  color='FF000000')
-border = Border(left=Side(style='thin'),
-                right=Side(style='thin'),
-                top=Side(style='thin'),
-                bottom=Side(style='thin'))
-
+# sorter_master.dict_inYear_City_salary = dict(
+#     sorted(sorter_master.dict_inYear_City_salary.items(), key=lambda item: item[1], reverse=True))
+# sorter_master.dict_inYear_City = dict(
+#     sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
+#
+# sumInList = sorter_master.dict_inYear_City["Другие"] + sum(list(dict(list(sorter_master.dict_inYear_City.items())[10:]).values()))
+# sorter_master.dict_inYear_City["Другие"] = 0
+# sorter_master.dict_inYear_City = dict(
+#     sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
+# sorter_master.dict_inYear_City = dict(list(sorter_master.dict_inYear_City.items())[:10])
+# sorter_master.dict_inYear_City_salary = dict(list(sorter_master.dict_inYear_City_salary.items())[:10])
+#
+# print("Динамика уровня зарплат по годам: {0}".format(sorter_master.dict_inYear_noName_salary))
+# print("Динамика количества вакансий по годам: {0}".format(sorter_master.dict_inYear_noName))
+# print("Динамика уровня зарплат по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName_salary))
+# print("Динамика количества вакансий по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName))
+# print("Уровень зарплат по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City_salary))
+# print("Доля вакансий по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City))
+#
+# font_title = Font(name='Calibri',
+#                   size=11,
+#                   bold=True,
+#                   italic=False,
+#                   vertAlign=None,
+#                   underline='none',
+#                   strike=False,
+#                   color='FF000000')
+# border = Border(left=Side(style='thin'),
+#                 right=Side(style='thin'),
+#                 top=Side(style='thin'),
+#                 bottom=Side(style='thin'))
+#
 wb = op.Workbook()
-#Таблица
-rep = report(font_title,border)
-data_for_excel = [sorter_master.dict_inYear_noName_salary,
-           sorter_master.dict_inYear_WithName_salary,
-            sorter_master.dict_inYear_noName,
-            sorter_master.dict_inYear_WithName,
-            sorter_master.dict_inYear_City_salary,
-            sorter_master.dict_inYear_City]
-rep.generate_excel(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,wb,dataSet.job_name)
-rep.generate_excel_async(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,dataSet.job_name, wb)
-wb.save("report.xlsx")
+# #Таблица
+# rep = report(font_title,border)
+# data_for_excel = [sorter_master.dict_inYear_noName_salary,
+#            sorter_master.dict_inYear_WithName_salary,
+#             sorter_master.dict_inYear_noName,
+#             sorter_master.dict_inYear_WithName,
+#             sorter_master.dict_inYear_City_salary,
+#             sorter_master.dict_inYear_City]
+# rep.generate_excel(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,wb,dataSet.job_name)
+# rep.generate_excel_async(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,dataSet.job_name, wb)
+# wb.save("report.xlsx")
 
 #Графики
-labels_years = list(sorter_master.dict_inYear_noName_salary.keys())
-salary_noName = list(sorter_master.dict_inYear_noName_salary.values())
-salart_Name = list(sorter_master.dict_inYear_WithName_salary.values())
-
-vac_noName = list(sorter_master.dict_inYear_noName.values())
-vac_Name = list(sorter_master.dict_inYear_WithName.values())
-
-cityes_salary = list(sorter_master.dict_inYear_City_salary.values())
-labels_cityes = list(sorter_master.dict_inYear_City.keys())
-
-sorter_master.dict_inYear_City["Другие"] = sumInList
-sorter_master.dict_inYear_City = dict(
-    sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
-circle_labels = list(sorter_master.dict_inYear_City.keys())
-cityes_perc = list(sorter_master.dict_inYear_City.values())
-
-width = 0.4
-x = np.arange(len(labels_years))
-y = np.arange(len(labels_cityes))
-
-matplotlib.rc('axes', titlesize=8)
-matplotlib.rc('font', size=8)
-matplotlib.rc('xtick', labelsize=8)
-matplotlib.rc('ytick', labelsize=8)
-matplotlib.rc('legend', fontsize=8)
-
-fig, ax = plt.subplots(2, 2)
-
-rects1 = ax[0, 0].bar(x - width / 2, salary_noName, width, label="Средняя з/п")
-rects2 = ax[0, 0].bar(x + width / 2, salart_Name, width, label="з/п {0}".format(dataSet.job_name))
-ax[0, 0].set_title('Уровень зарплат по годам')
-ax[0, 0].set_xticks(x)
-ax[0, 0].set_xticklabels(labels_years, rotation=90)
-ax[0, 0].legend()
-
-rects3 = ax[0, 1].bar(x - width / 2, vac_noName, width, label="Количество вакансий")
-rects4 = ax[0, 1].bar(x + width / 2, vac_Name, width, label="Количество вакансий {0}".format(dataSet.job_name))
-ax[0, 1].set_title('Количество вакансий по годам')
-ax[0, 1].set_xticks(x)
-ax[0, 1].set_xticklabels(labels_years, rotation=90)
-ax[0, 1].legend()
-
-rects5 = ax[1, 0].barh(y, cityes_salary, width * 2, align='center')
-ax[1, 0].set_title('Уровень зарплат по городам')
-ax[1, 0].set_yticks(y, labels=labels_cityes)
-ax[1, 0].set_yticklabels(labels_cityes, fontsize=6,
-                         fontdict={'horizontalalignment': 'right', 'verticalalignment': 'center'})
-ax[1, 0].invert_yaxis()
-
-circle = ax[1, 1].pie(cityes_perc, labels=circle_labels, textprops={'fontsize': 6})
-ax[1, 1].set_title('Доля вакансий по городам', fontsize=6)
-ax[1, 1].axis('equal')
-
-plt.tight_layout()
-fig.savefig("graph.png")
-
-
+# labels_years = list(sorter_master.dict_inYear_noName_salary.keys())
+# salary_noName = list(sorter_master.dict_inYear_noName_salary.values())
+# salart_Name = list(sorter_master.dict_inYear_WithName_salary.values())
+#
+# vac_noName = list(sorter_master.dict_inYear_noName.values())
+# vac_Name = list(sorter_master.dict_inYear_WithName.values())
+#
+# cityes_salary = list(sorter_master.dict_inYear_City_salary.values())
+# labels_cityes = list(sorter_master.dict_inYear_City.keys())
+#
+# sorter_master.dict_inYear_City["Другие"] = sumInList
+# sorter_master.dict_inYear_City = dict(
+#     sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
+# circle_labels = list(sorter_master.dict_inYear_City.keys())
+# cityes_perc = list(sorter_master.dict_inYear_City.values())
+#
+# width = 0.4
+# x = np.arange(len(labels_years))
+# y = np.arange(len(labels_cityes))
+#
+# matplotlib.rc('axes', titlesize=8)
+# matplotlib.rc('font', size=8)
+# matplotlib.rc('xtick', labelsize=8)
+# matplotlib.rc('ytick', labelsize=8)
+# matplotlib.rc('legend', fontsize=8)
+#
+# fig, ax = plt.subplots(2, 2)
+#
+# rects1 = ax[0, 0].bar(x - width / 2, salary_noName, width, label="Средняя з/п")
+# rects2 = ax[0, 0].bar(x + width / 2, salart_Name, width, label="з/п {0}".format(dataSet.job_name))
+# ax[0, 0].set_title('Уровень зарплат по годам')
+# ax[0, 0].set_xticks(x)
+# ax[0, 0].set_xticklabels(labels_years, rotation=90)
+# ax[0, 0].legend()
+#
+# rects3 = ax[0, 1].bar(x - width / 2, vac_noName, width, label="Количество вакансий")
+# rects4 = ax[0, 1].bar(x + width / 2, vac_Name, width, label="Количество вакансий {0}".format(dataSet.job_name))
+# ax[0, 1].set_title('Количество вакансий по годам')
+# ax[0, 1].set_xticks(x)
+# ax[0, 1].set_xticklabels(labels_years, rotation=90)
+# ax[0, 1].legend()
+#
+# rects5 = ax[1, 0].barh(y, cityes_salary, width * 2, align='center')
+# ax[1, 0].set_title('Уровень зарплат по городам')
+# ax[1, 0].set_yticks(y, labels=labels_cityes)
+# ax[1, 0].set_yticklabels(labels_cityes, fontsize=6,
+#                          fontdict={'horizontalalignment': 'right', 'verticalalignment': 'center'})
+# ax[1, 0].invert_yaxis()
+#
+# circle = ax[1, 1].pie(cityes_perc, labels=circle_labels, textprops={'fontsize': 6})
+# ax[1, 1].set_title('Доля вакансий по городам', fontsize=6)
+# ax[1, 1].axis('equal')
+#
+# plt.tight_layout()
+# fig.savefig("graph.png")
+#
 #rep.generate_report(dataSet)
-
 #if __name__ == '__main__':
 #    unittest.main()
