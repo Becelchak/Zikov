@@ -1234,3 +1234,35 @@ wb = op.Workbook()
 #rep.generate_report(dataSet)
 #if __name__ == '__main__':
 #    unittest.main()
+
+def get_curr(row,df_curr):
+    time = row['published_at'].split('T')[0]
+    year = time.split('-')[0]
+    month = time.split('-')[1]
+    if month[0] == '0':
+        month = month[1]
+    try:
+        curr = df_curr.loc[df_curr['date'] == "{0}-{1}".format(year,month)]
+        answer = curr[row['salary_currency']][0]
+    except:
+        answer = np.nan
+    return float(answer)
+
+df = pd.read_csv("vacancies_dif_currencies.csv", encoding='utf_8_sig')
+df_curr = pd.read_csv('current.csv')
+salary_column = []
+for row in df.iterrows():
+    if pd.isna(row[1]['salary_to']):
+        row[1]['salary_to'] = 0
+    elif pd.isna(row[1]['salary_from']):
+        row[1]['salary_from'] = 0
+    if pd.isna(row[1]['salary_currency']):
+        salary_column.append(row[1]['salary_currency'])
+    else:
+        salary_column.append((float(row[1]['salary_to']) + float(row[1]['salary_from'])) * get_curr(row[1],df_curr))
+
+
+df = df.replace({'salary_from':salary_column})
+df = df.drop(['salary_to','salary_currency'], axis=1)
+df = df.rename(columns={'salary_from':'salary'})
+df.head(100).to_csv('head100.csv')
