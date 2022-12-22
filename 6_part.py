@@ -547,7 +547,15 @@ class DataSet():
                     title_row = row
                     normal_length = len(row)
                 else:
-                    if '' not in row and normal_length == len(row):
+                    if '' in row and ((row[1] != '' or row[2] != '') and row[3] != ''):
+                        temp = []
+                        for item in row:
+                            if item == '':
+                                temp.append(item.replace('', '0'))
+                            else:
+                                temp.append(item)
+                        row = temp
+                    if normal_length == len(row) and '' not in row:
                         data_row.append(row)
         return title_row, data_row
 
