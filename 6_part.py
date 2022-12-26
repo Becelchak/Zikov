@@ -295,6 +295,11 @@ class InputConect():
         # 3 способ
         year = x.published_at[0:4]
 
+        try:
+            f = currency_to_rub[x.salary.salary_currency]
+        except:
+            currency_to_rub[x.salary.salary_currency] = 0
+
         if not self.dict_inYear_WithName.__contains__(int(year)) and (x.name.__contains__(self.dataSet.job_name)
                                                                          or x.name.__contains__(
                     self.dataSet.job_name.lower())):
@@ -486,17 +491,24 @@ class DataSet():
             job_name (string) - содержит название профессии, по которой будет осуществлен поиск и отбор
             vacancies_objects (list) - содержит все поля вакансии
         """
-        #self.file_name = input("Введите название файла: ")
-        #self.job_name = input("Введите название профессии: ")
+        self.file_name = input("Введите название файла: ")
+        self.job_name = input("Введите название профессии: ")
 
-        self.file_name = "vacancies_dif_currencies.csv"
-        self.job_name = "Аналитик"
+        # self.file_name = "vacancies_dif_currencies.csv"
+        # self.job_name = "Аналитик"
         self.check_atr()
-        self.vacancies_objects = self.csv_filter(self.file_name, self)
+        self.vacancies_objects = self.csv_filter_pandas(self.file_name)
         if len(self.vacancies_objects) == 0:
             print("Нет данных")
             exit()
 
+
+    def csv_filter_pandas(self,file):
+        df = pd.read_csv(file, encoding='utf_8_sig')
+        vacant_list = []
+        for row in df.iterrows():
+            vacant_list.append(Vacancy(row[1]))
+        return vacant_list
     def csv_filter(self, file, data):
         """
         Фильтрация содержимых файла
