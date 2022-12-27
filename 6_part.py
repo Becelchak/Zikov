@@ -5,7 +5,6 @@ import re
 import os
 import datetime
 import requests
-import xml.etree.ElementTree as ET
 
 from unittest import TestCase
 import unittest
@@ -132,8 +131,8 @@ class InputConect():
     dict_inYear_noName = {}
     dict_inYear_noName_salary = {}
 
-    dict_inYear_WithName = {}
-    dict_inYear_WithName_salary = {}
+    dict_inYear_WithName_and_city = {}
+    dict_inYear_WithName_salary_and_city = {}
 
     dict_inYear_City = {}
     dict_inYear_City_salary = {}
@@ -300,50 +299,50 @@ class InputConect():
         except:
             currency_to_rub[x.salary.salary_currency] = 0
 
-        if not self.dict_inYear_WithName.__contains__(int(year)) and (x.name.__contains__(self.dataSet.job_name)
-                                                                         or x.name.__contains__(
-                    self.dataSet.job_name.lower())):
-            self.dict_inYear_WithName[int(year)] = 1
-            self.dict_inYear_WithName_salary[int(year)] = (float(x.salary.salary_from)
-                                                              * currency_to_rub[x.salary.salary_currency]
-                                                              + float(x.salary.salary_to)
-                                                              * currency_to_rub[x.salary.salary_currency]) \
-                                                             / 2
-        elif x.name.__contains__(self.dataSet.job_name) or x.name.__contains__(self.dataSet.job_name.lower()):
-            self.dict_inYear_WithName[int(year)] += 1
-            self.dict_inYear_WithName_salary[int(year)] += (float(x.salary.salary_from)
+        if not self.dict_inYear_WithName_and_city.__contains__(int(year)) and (x.name.__contains__(dataSet.job_name)
+                                                                            or x.name.__contains__(
+                    dataSet.job_name.lower()) and x.area_name == dataSet.city_name):
+            self.dict_inYear_WithName_and_city[int(year)] = 1
+            self.dict_inYear_WithName_salary_and_city[int(year)] = (float(x.salary.salary_from)
+                                                                 * currency_to_rub[x.salary.salary_currency]
+                                                                 + float(x.salary.salary_to)
+                                                                 * currency_to_rub[x.salary.salary_currency]) \
+                                                                / 2
+        elif x.name.__contains__(dataSet.job_name) or x.name.__contains__(dataSet.job_name.lower()) and x.area_name == dataSet.city_name:
+            self.dict_inYear_WithName_and_city[int(year)] += 1
+            self.dict_inYear_WithName_salary_and_city[int(year)] += (float(x.salary.salary_from)
+                                                                  * currency_to_rub[x.salary.salary_currency]
+                                                                  + float(x.salary.salary_to)
+                                                                  * currency_to_rub[x.salary.salary_currency]) \
+                                                                 / 2
+        if not self.dict_inYear_noName.__contains__(int(year)):
+            self.dict_inYear_noName[int(year)] = 1
+            self.dict_inYear_noName_salary[int(year)] = (float(x.salary.salary_from)
                                                                * currency_to_rub[x.salary.salary_currency]
                                                                + float(x.salary.salary_to)
                                                                * currency_to_rub[x.salary.salary_currency]) \
                                                               / 2
-        if not self.dict_inYear_noName.__contains__(int(year)):
-            self.dict_inYear_noName[int(year)] = 1
-            self.dict_inYear_noName_salary[int(year)] = (float(x.salary.salary_from)
-                                                            * currency_to_rub[x.salary.salary_currency]
-                                                            + float(x.salary.salary_to)
-                                                            * currency_to_rub[x.salary.salary_currency]) \
-                                                           / 2
         elif self.dict_inYear_noName.__contains__(int(year)):
             self.dict_inYear_noName[int(year)] += 1
             self.dict_inYear_noName_salary[int(year)] += (float(x.salary.salary_from)
-                                                             * currency_to_rub[x.salary.salary_currency]
-                                                             + float(x.salary.salary_to)
-                                                             * currency_to_rub[x.salary.salary_currency]) \
-                                                            / 2
+                                                                * currency_to_rub[x.salary.salary_currency]
+                                                                + float(x.salary.salary_to)
+                                                                * currency_to_rub[x.salary.salary_currency]) \
+                                                               / 2
         if not self.temp_dict.__contains__(city):
             self.temp_dict[city] = 1
             self.temp_salary_dict[city] = (float(x.salary.salary_from)
-                                           * currency_to_rub[x.salary.salary_currency]
-                                           + float(x.salary.salary_to)
-                                           * currency_to_rub[x.salary.salary_currency]) \
-                                          / 2
+                                              * currency_to_rub[x.salary.salary_currency]
+                                              + float(x.salary.salary_to)
+                                              * currency_to_rub[x.salary.salary_currency]) \
+                                             / 2
         elif self.temp_dict.__contains__(city):
             self.temp_dict[city] += 1
             self.temp_salary_dict[city] += (float(x.salary.salary_from)
-                                            * currency_to_rub[x.salary.salary_currency]
-                                            + float(x.salary.salary_to)
-                                            * currency_to_rub[x.salary.salary_currency]) \
-                                           / 2
+                                               * currency_to_rub[x.salary.salary_currency]
+                                               + float(x.salary.salary_to)
+                                               * currency_to_rub[x.salary.salary_currency]) \
+                                              / 2
         return datetime.datetime(day=int(x.published_at[8:10]),
                                  month=int(x.published_at[5:7]),
                                  year=int(x.published_at[0:4]),
@@ -427,12 +426,12 @@ class InputConect():
         for key in self.dict_inYear_noName.keys():
             self.dict_inYear_noName_salary[key] = math.floor(
                 int(self.dict_inYear_noName_salary[key]) / self.dict_inYear_noName[key])
-            if len(self.dict_inYear_WithName) > 0:
-                self.dict_inYear_WithName_salary[key] = math.floor(
-                    int(self.dict_inYear_WithName_salary[key]) / self.dict_inYear_WithName[key])
+            if len(self.dict_inYear_WithName_and_city) > 0:
+                self.dict_inYear_WithName_salary_and_city[key] = math.floor(
+                    int(self.dict_inYear_WithName_salary_and_city[key]) / self.dict_inYear_WithName_and_city[key])
             else:
-                self.dict_inYear_WithName[key] = 0
-                self.dict_inYear_WithName_salary[key] = 0
+                self.dict_inYear_WithName_and_city[key] = 0
+                self.dict_inYear_WithName_salary_and_city[key] = 0
         bad_city_vac_count = 0
         for city in self.temp_dict.keys():
             if self.temp_dict[city] >= math.floor(len(dataSet.vacancies_objects) / 100):
@@ -469,6 +468,7 @@ class DataSet():
     """
     file_name = ""
     job_name = ""
+    city_name = ""
 
     vacancies_objects = []
     title_piece = ["№"] + list(vacant_dic.values())
@@ -493,6 +493,7 @@ class DataSet():
         """
         self.file_name = input("Введите название файла: ")
         self.job_name = input("Введите название профессии: ")
+        self.city_name = input("Введите название региона: ")
 
         # self.file_name = "vacancies_dif_currencies.csv"
         # self.job_name = "Аналитик"
@@ -929,6 +930,7 @@ class report():
         """
         # В PDF
         job_name = data.job_name
+        city_name = data.city_name
 
         env = Environment(loader=FileSystemLoader('.'))
         template = env.get_template("Shablon.html")
@@ -939,7 +941,7 @@ class report():
         }
 
         pdf_template = template.render(
-            {'job_name': job_name, 'excel': wb["Статистика по годам"], 'excel2': wb['Статистика по городам']})
+            {'job_name': job_name, 'city_name' : city_name,'excel': wb["Статистика по годам"], 'excel2': wb['Статистика по городам']})
         config = pdfkit.configuration(wkhtmltopdf=r'E:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe')
         pdfkit.from_string(pdf_template, 'report.pdf', configuration=config, options=options)
 
@@ -1057,73 +1059,72 @@ full_table_date = {}
 
 
 # Динамика зарплат по годам
-#sorter_master = InputConect(dataSet)
+sorter_master = InputConect(dataSet)
 # Сложная функция
 #sorter_master.sorted_for_graf()
-temp_dict = []
-temp_vacant_obj = []
-for curr in curr_dict.items():
-    curr_dict[curr[0]] = curr[1] / len(dataSet.vacancies_objects)
-    if curr[1] > 5000:
-        temp_dict.append(curr[0])
-
-
-for vacant in dataSet.vacancies_objects:
-    if temp_dict.__contains__(vacant.salary.salary_currency):
-        temp_vacant_obj.append(vacant)
-
-dataSet.vacancies_objects = temp_vacant_obj
-dataSet.vacancies_objects.sort(key= lambda x: x.published_at)
-min = dataSet.vacancies_objects[0].published_at.split('T')[0]
-max = dataSet.vacancies_objects[len(dataSet.vacancies_objects) - 1].published_at.split('T')[0]
-minTime = datetime.datetime(year=int(min.split('-')[0]),
-                            month=int(min.split('-')[1]),
-                            day=1)
-maxTime = datetime.datetime(year=int(max.split('-')[0]),
-                            month=int(max.split('-')[1]),
-                            day=1)
-
-years_dif = maxTime.year - minTime.year
-month_dif = maxTime.month - minTime.month + (12 * years_dif)
+# temp_dict = []
+# temp_vacant_obj = []
+# for curr in curr_dict.items():
+#     curr_dict[curr[0]] = curr[1] / len(dataSet.vacancies_objects)
+#     if curr[1] > 5000:
+#         temp_dict.append(curr[0])
+#
+#
+# for vacant in dataSet.vacancies_objects:
+#     if temp_dict.__contains__(vacant.salary.salary_currency):
+#         temp_vacant_obj.append(vacant)
+#
+# dataSet.vacancies_objects = temp_vacant_obj
+# dataSet.vacancies_objects.sort(key= lambda x: x.published_at)
+# min = dataSet.vacancies_objects[0].published_at.split('T')[0]
+# max = dataSet.vacancies_objects[len(dataSet.vacancies_objects) - 1].published_at.split('T')[0]
+# minTime = datetime.datetime(year=int(min.split('-')[0]),
+#                             month=int(min.split('-')[1]),
+#                             day=1)
+# maxTime = datetime.datetime(year=int(max.split('-')[0]),
+#                             month=int(max.split('-')[1]),
+#                             day=1)
+#
+# years_dif = maxTime.year - minTime.year
+# month_dif = maxTime.month - minTime.month + (12 * years_dif)
 
 # Создание csv валют
-header_csv = ["date"] + list(curr_dict.keys())
-file = open('current.csv', 'w', newline='')
-writer = csv.DictWriter(file,fieldnames=header_csv)
-writer.writeheader()
-
-row_list = []
-df = pd.DataFrame(columns=header_csv)
-month = minTime.month
-year = minTime.year
-for date in range(month_dif):
-    answ_dict = {"date": 0}
-    dat = ""
-    for curr in curr_dict.keys():
-        answ_dict["date"] = "{0}-{1}".format(year, month)
-        if curr != "RUR":
-            m_month = month
-            if month < 10:
-                m_month = "0{0}".format(month)
-            url_Bank = "http://www.cbr.ru/scripts/XML_daily.asp?date_req=01/{0}/{1}".format(m_month, year)
-            try:
-                res = ET.fromstring(requests.get(url_Bank).text) \
-                    .find('./Valute[CharCode="{0}"]/Value'.format(curr)) \
-                    .text.replace(',', '.')
-                answ_dict[curr] = res
-            except:
-                answ_dict[curr] = ' '
-        else:
-            answ_dict[curr] = ' '
-    month += 1
-    if month > 12:
-        month = 1
-        year += 1
-    writer.writerow(answ_dict)
-    answ_dict.clear()
-
-file.close()
-
+# header_csv = ["date"] + list(curr_dict.keys())
+# file = open('current.csv', 'w', newline='')
+# writer = csv.DictWriter(file,fieldnames=header_csv)
+# writer.writeheader()
+#
+# row_list = []
+# df = pd.DataFrame(columns=header_csv)
+# month = minTime.month
+# year = minTime.year
+# for date in range(month_dif):
+#     answ_dict = {"date": 0}
+#     dat = ""
+#     for curr in curr_dict.keys():
+#         answ_dict["date"] = "{0}-{1}".format(year, month)
+#         if curr != "RUR":
+#             m_month = month
+#             if month < 10:
+#                 m_month = "0{0}".format(month)
+#             url_Bank = "http://www.cbr.ru/scripts/XML_daily.asp?date_req=01/{0}/{1}".format(m_month, year)
+#             try:
+#                 res = ET.fromstring(requests.get(url_Bank).text) \
+#                     .find('./Valute[CharCode="{0}"]/Value'.format(curr)) \
+#                     .text.replace(',', '.')
+#                 answ_dict[curr] = res
+#             except:
+#                 answ_dict[curr] = ' '
+#         else:
+#             answ_dict[curr] = ' '
+#     month += 1
+#     if month > 12:
+#         month = 1
+#         year += 1
+#     writer.writerow(answ_dict)
+#     answ_dict.clear()
+#
+# file.close()
 #print("Частота валют за промежуток 2003-2022 : {0}".format(curr_dict))
 
 # Попытка мультипроцессинка №64-2
@@ -1141,140 +1142,141 @@ file.close()
 #     p2.join()
 #     p3.join()
 
-# sorter_master.dict_inYear_City_salary = dict(
-#     sorted(sorter_master.dict_inYear_City_salary.items(), key=lambda item: item[1], reverse=True))
-# sorter_master.dict_inYear_City = dict(
-#     sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
-#
-# sumInList = sorter_master.dict_inYear_City["Другие"] + sum(list(dict(list(sorter_master.dict_inYear_City.items())[10:]).values()))
-# sorter_master.dict_inYear_City["Другие"] = 0
-# sorter_master.dict_inYear_City = dict(
-#     sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
-# sorter_master.dict_inYear_City = dict(list(sorter_master.dict_inYear_City.items())[:10])
-# sorter_master.dict_inYear_City_salary = dict(list(sorter_master.dict_inYear_City_salary.items())[:10])
-#
-# print("Динамика уровня зарплат по годам: {0}".format(sorter_master.dict_inYear_noName_salary))
-# print("Динамика количества вакансий по годам: {0}".format(sorter_master.dict_inYear_noName))
-# print("Динамика уровня зарплат по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName_salary))
-# print("Динамика количества вакансий по годам для выбранной профессии: {0}".format(sorter_master.dict_inYear_WithName))
+sorter_master.dict_inYear_City_salary = dict(
+    sorted(sorter_master.dict_inYear_City_salary.items(), key=lambda item: item[1], reverse=True))
+sorter_master.dict_inYear_City = dict(
+    sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
+
+sumInList = sorter_master.dict_inYear_City["Другие"] + sum(list(dict(list(sorter_master.dict_inYear_City.items())[10:]).values()))
+sorter_master.dict_inYear_City["Другие"] = 0
+sorter_master.dict_inYear_City = dict(
+    sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
+sorter_master.dict_inYear_City = dict(list(sorter_master.dict_inYear_City.items())[:10])
+sorter_master.dict_inYear_City_salary = dict(list(sorter_master.dict_inYear_City_salary.items())[:10])
+
+print("Динамика уровня зарплат по годам: {0}".format(sorter_master.dict_inYear_noName_salary))
+print("Динамика количества вакансий по годам: {0}".format(sorter_master.dict_inYear_noName))
+print("Динамика уровня зарплат по годам для выбранной профессии и региона: {0}".format(sorter_master.dict_inYear_WithName_salary_and_city))
+print("Динамика количества вакансий по годам для выбранной профессии и региона: {0}".format(sorter_master.dict_inYear_WithName_and_city))
 # print("Уровень зарплат по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City_salary))
 # print("Доля вакансий по городам (в порядке убывания): {0}".format(sorter_master.dict_inYear_City))
-#
-# font_title = Font(name='Calibri',
-#                   size=11,
-#                   bold=True,
-#                   italic=False,
-#                   vertAlign=None,
-#                   underline='none',
-#                   strike=False,
-#                   color='FF000000')
-# border = Border(left=Side(style='thin'),
-#                 right=Side(style='thin'),
-#                 top=Side(style='thin'),
-#                 bottom=Side(style='thin'))
-#
-wb = op.Workbook()
-# #Таблица
-# rep = report(font_title,border)
-# data_for_excel = [sorter_master.dict_inYear_noName_salary,
-#            sorter_master.dict_inYear_WithName_salary,
-#             sorter_master.dict_inYear_noName,
-#             sorter_master.dict_inYear_WithName,
-#             sorter_master.dict_inYear_City_salary,
-#             sorter_master.dict_inYear_City]
-# rep.generate_excel(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,wb,dataSet.job_name)
-# rep.generate_excel_async(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,dataSet.job_name, wb)
-# wb.save("report.xlsx")
+font_title = Font(name='Calibri',
+                  size=11,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+border = Border(left=Side(style='thin'),
+                right=Side(style='thin'),
+                top=Side(style='thin'),
+                bottom=Side(style='thin'))
 
+wb = op.Workbook()
+
+#Таблица
+rep = report(font_title,border)
+data_for_excel = [sorter_master.dict_inYear_noName_salary,
+           sorter_master.dict_inYear_WithName_salary_and_city,
+            sorter_master.dict_inYear_noName,
+            sorter_master.dict_inYear_WithName_and_city,
+            sorter_master.dict_inYear_City_salary,
+            sorter_master.dict_inYear_City]
+rep.generate_excel_async(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,dataSet.job_name,wb)
+rep.generate_excel(list(sorter_master.dict_inYear_noName_salary.keys()),data_for_excel,wb,dataSet.job_name)
+wb.save("report.xlsx")
 #Графики
-# labels_years = list(sorter_master.dict_inYear_noName_salary.keys())
-# salary_noName = list(sorter_master.dict_inYear_noName_salary.values())
-# salart_Name = list(sorter_master.dict_inYear_WithName_salary.values())
-#
-# vac_noName = list(sorter_master.dict_inYear_noName.values())
-# vac_Name = list(sorter_master.dict_inYear_WithName.values())
-#
-# cityes_salary = list(sorter_master.dict_inYear_City_salary.values())
-# labels_cityes = list(sorter_master.dict_inYear_City.keys())
-#
-# sorter_master.dict_inYear_City["Другие"] = sumInList
-# sorter_master.dict_inYear_City = dict(
-#     sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
-# circle_labels = list(sorter_master.dict_inYear_City.keys())
-# cityes_perc = list(sorter_master.dict_inYear_City.values())
-#
-# width = 0.4
-# x = np.arange(len(labels_years))
-# y = np.arange(len(labels_cityes))
-#
-# matplotlib.rc('axes', titlesize=8)
-# matplotlib.rc('font', size=8)
-# matplotlib.rc('xtick', labelsize=8)
-# matplotlib.rc('ytick', labelsize=8)
-# matplotlib.rc('legend', fontsize=8)
-#
-# fig, ax = plt.subplots(2, 2)
-#
-# rects1 = ax[0, 0].bar(x - width / 2, salary_noName, width, label="Средняя з/п")
-# rects2 = ax[0, 0].bar(x + width / 2, salart_Name, width, label="з/п {0}".format(dataSet.job_name))
-# ax[0, 0].set_title('Уровень зарплат по годам')
-# ax[0, 0].set_xticks(x)
-# ax[0, 0].set_xticklabels(labels_years, rotation=90)
-# ax[0, 0].legend()
-#
-# rects3 = ax[0, 1].bar(x - width / 2, vac_noName, width, label="Количество вакансий")
-# rects4 = ax[0, 1].bar(x + width / 2, vac_Name, width, label="Количество вакансий {0}".format(dataSet.job_name))
-# ax[0, 1].set_title('Количество вакансий по годам')
-# ax[0, 1].set_xticks(x)
-# ax[0, 1].set_xticklabels(labels_years, rotation=90)
-# ax[0, 1].legend()
-#
-# rects5 = ax[1, 0].barh(y, cityes_salary, width * 2, align='center')
-# ax[1, 0].set_title('Уровень зарплат по городам')
-# ax[1, 0].set_yticks(y, labels=labels_cityes)
-# ax[1, 0].set_yticklabels(labels_cityes, fontsize=6,
-#                          fontdict={'horizontalalignment': 'right', 'verticalalignment': 'center'})
-# ax[1, 0].invert_yaxis()
-#
-# circle = ax[1, 1].pie(cityes_perc, labels=circle_labels, textprops={'fontsize': 6})
-# ax[1, 1].set_title('Доля вакансий по городам', fontsize=6)
-# ax[1, 1].axis('equal')
-#
-# plt.tight_layout()
-# fig.savefig("graph.png")
+labels_years = list(sorter_master.dict_inYear_noName_salary.keys())
+salary_noName = list(sorter_master.dict_inYear_noName_salary.values())
+salart_Name = list(sorter_master.dict_inYear_WithName_salary_and_city.values())
+
+vac_noName = list(sorter_master.dict_inYear_noName.values())
+vac_Name = list(sorter_master.dict_inYear_WithName_and_city.values())
+
+cityes_salary = list(sorter_master.dict_inYear_City_salary.values())
+labels_cityes = list(sorter_master.dict_inYear_City.keys())
+
+sorter_master.dict_inYear_City["Другие"] = sumInList
+sorter_master.dict_inYear_City = dict(
+    sorted(sorter_master.dict_inYear_City.items(), key=lambda item: item[1], reverse=True))
+circle_labels = list(sorter_master.dict_inYear_City.keys())
+cityes_perc = list(sorter_master.dict_inYear_City.values())
+
+width = 0.4
+x = np.arange(len(labels_years))
+y = np.arange(len(labels_cityes))
+
+matplotlib.rc('axes', titlesize=8)
+matplotlib.rc('font', size=8)
+matplotlib.rc('xtick', labelsize=8)
+matplotlib.rc('ytick', labelsize=8)
+matplotlib.rc('legend', fontsize=8)
+
+fig, ax = plt.subplots(2, 2)
+
+rects1 = ax[0, 0].bar(x - width / 2, salary_noName, width, label="Средняя з/п")
+rects2 = ax[0, 0].bar(x + width / 2, salart_Name, width, label="з/п {0}({1})".format(dataSet.job_name, dataSet.city_name))
+ax[0, 0].set_title('Уровень зарплат по годам')
+ax[0, 0].set_xticks(x)
+ax[0, 0].set_xticklabels(labels_years, rotation=90)
+ax[0, 0].legend()
+
+rects3 = ax[0, 1].bar(x - width / 2, vac_noName, width, label="Количество вакансий")
+rects4 = ax[0, 1].bar(x + width / 2, vac_Name, width, label="Количество вакансий {0}({1})".format(dataSet.job_name, dataSet.city_name))
+ax[0, 1].set_title('Количество вакансий по годам')
+ax[0, 1].set_xticks(x)
+ax[0, 1].set_xticklabels(labels_years, rotation=90)
+ax[0, 1].legend()
+
+rects5 = ax[1, 0].barh(y, cityes_salary, width * 2, align='center')
+ax[1, 0].set_title('Уровень зарплат по городам')
+ax[1, 0].set_yticks(y, labels=labels_cityes)
+ax[1, 0].set_yticklabels(labels_cityes, fontsize=6,
+                         fontdict={'horizontalalignment': 'right', 'verticalalignment': 'center'})
+ax[1, 0].invert_yaxis()
+
+circle = ax[1, 1].pie(cityes_perc, labels=circle_labels, textprops={'fontsize': 6})
+ax[1, 1].set_title('Доля вакансий по городам', fontsize=6)
+ax[1, 1].axis('equal')
+
+plt.tight_layout()
+fig.savefig("graph.png")
+
+rep.generate_report(dataSet)
 #
 #rep.generate_report(dataSet)
 #if __name__ == '__main__':
 #    unittest.main()
 
-def get_curr(row,df_curr):
-    time = row['published_at'].split('T')[0]
-    year = time.split('-')[0]
-    month = time.split('-')[1]
-    if month[0] == '0':
-        month = month[1]
-    try:
-        curr = df_curr.loc[df_curr['date'] == "{0}-{1}".format(year,month)]
-        answer = curr[row['salary_currency']][0]
-    except:
-        answer = np.nan
-    return float(answer)
-
-df = pd.read_csv("vacancies_dif_currencies.csv", encoding='utf_8_sig')
-df_curr = pd.read_csv('current.csv')
-salary_column = []
-for row in df.iterrows():
-    if pd.isna(row[1]['salary_to']):
-        row[1]['salary_to'] = 0
-    elif pd.isna(row[1]['salary_from']):
-        row[1]['salary_from'] = 0
-    if pd.isna(row[1]['salary_currency']):
-        salary_column.append(row[1]['salary_currency'])
-    else:
-        salary_column.append((float(row[1]['salary_to']) + float(row[1]['salary_from'])) * get_curr(row[1],df_curr))
-
-
-df = df.replace({'salary_from':salary_column})
-df = df.drop(['salary_to','salary_currency'], axis=1)
-df = df.rename(columns={'salary_from':'salary'})
-df.head(100).to_csv('head100.csv')
+# def get_curr(row,df_curr):
+#     time = row['published_at'].split('T')[0]
+#     year = time.split('-')[0]
+#     month = time.split('-')[1]
+#     if month[0] == '0':
+#         month = month[1]
+#     try:
+#         curr = df_curr.loc[df_curr['date'] == "{0}-{1}".format(year,month)]
+#         answer = curr[row['salary_currency']][0]
+#     except:
+#         answer = np.nan
+#     return float(answer)
+#
+# df = pd.read_csv("vacancies_dif_currencies.csv", encoding='utf_8_sig')
+# df_curr = pd.read_csv('current.csv')
+# salary_column = []
+# for row in df.iterrows():
+#     if pd.isna(row[1]['salary_to']):
+#         row[1]['salary_to'] = 0
+#     elif pd.isna(row[1]['salary_from']):
+#         row[1]['salary_from'] = 0
+#     if pd.isna(row[1]['salary_currency']):
+#         salary_column.append(row[1]['salary_currency'])
+#     else:
+#         salary_column.append((float(row[1]['salary_to']) + float(row[1]['salary_from'])) * get_curr(row[1],df_curr))
+#
+#
+# df = df.replace({'salary_from':salary_column})
+# df = df.drop(['salary_to','salary_currency'], axis=1)
+# df = df.rename(columns={'salary_from':'salary'})
+# df.head(100).to_csv('head100.csv')
