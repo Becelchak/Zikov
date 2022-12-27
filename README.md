@@ -15,4 +15,8 @@ API
 ![API 1](https://user-images.githubusercontent.com/88208993/208663692-61fa102d-e004-47ab-91ec-71a063a46e77.png)
 
 Pandas, обновленный report.pdf
+3.4.2
 [report.pdf](https://github.com/Becelchak/Zikov/files/10302922/report.pdf)
+
+3.4.3
+[report.pdf](https://github.com/Becelchak/Zikov/files/10306611/report.pdf)
