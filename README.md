@@ -20,3 +20,6 @@ Pandas, обновленный report.pdf
 
 3.4.3
 [report.pdf](https://github.com/Becelchak/Zikov/files/10306611/report.pdf)
+
+3.5.2
+![БД2](https://user-images.githubusercontent.com/88208993/209684333-8d047a90-0367-45c5-94b7-6d5323b6b3c1.png)
