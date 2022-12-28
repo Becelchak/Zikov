@@ -23,3 +23,11 @@ Pandas, обновленный report.pdf
 
 3.5.2
 ![БД2](https://user-images.githubusercontent.com/88208993/209684333-8d047a90-0367-45c5-94b7-6d5323b6b3c1.png)
+
+
+3.5.3
+![БД3-1](https://user-images.githubusercontent.com/88208993/209819291-25b94b1d-1574-49ee-86aa-69660ee05a54.png) 
+
+![БД3-2](https://user-images.githubusercontent.com/88208993/209819441-aaa515a1-cce7-48d3-bd43-9bc54f3bb3af.png)
+
+![БД3-3](https://user-images.githubusercontent.com/88208993/209819451-ed44d3e1-bc41-4233-9995-cd8aa13e57ee.png)
